@@ -130,7 +130,7 @@ void MRTwindow::onStartStop() {
       while ( shut->progress() < 1 )
         qtWait(shut, SIGNAL(progressChanged(int)));
 
-      ui->progressBar->setValue(curpoint++);
+      ui->progressBar->setValue(++curpoint);
 
       if (stopme)
         break;
