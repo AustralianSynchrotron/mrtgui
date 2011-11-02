@@ -3,6 +3,7 @@
 
 #include <QtGui/QMainWindow>
 #include <imbl/mrtShutter.h>
+#include <imbl/shutter1A.h>
 
 namespace Ui {
     class MRTwindow;
@@ -18,6 +19,7 @@ public:
 
 private:
   MrtShutter * shut;
+  Shutter1A * shut1A;
   Ui::MRTwindow *ui;
 
   bool stopme;

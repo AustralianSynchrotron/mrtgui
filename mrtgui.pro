@@ -23,7 +23,7 @@ FORMS    += mrtwindow.ui \
 
 
 LIBS     += -lqcamotorgui \
-            -limbl/libmrtShutter -limbl/libcomponent -limbl/libcomponentGui
+            -lmrtShutter -lshutter1A -lcomponent -lcomponentGui
 
 target.files = $$[TARGET]
 target.path = $$INSTALLBASE/lib/imbl

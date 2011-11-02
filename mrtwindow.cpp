@@ -5,21 +5,22 @@
 MRTwindow::MRTwindow(QWidget *parent) :
   QMainWindow(parent),
   shut(new MrtShutter),
+  shut1A(new Shutter1A),
   ui(new Ui::MRTwindow)
 {
     ui->setupUi(this);
     ui->axis2->setVisible(ui->use2nd->isChecked());
 
-
-    connect(shut, SIGNAL(canStartChanged(bool)), ui->disabledShutter, SLOT(setVisible(bool)));
-    connect(shut, SIGNAL(valuesOKchanged(bool)), ui->badShutter, SLOT(setHidden(bool)));
-
+    connect(shut, SIGNAL(progressChanged(int)), SLOT(updateShutterStatus()));
+    connect(shut, SIGNAL(canStartChanged(bool)), SLOT(updateShutterStatus()));
+    connect(shut, SIGNAL(valuesOKchanged(bool)), SLOT(updateShutterStatus()));
     connect(shut, SIGNAL(connectionChanged(bool)), SLOT(updateShutterStatus()));
     connect(shut, SIGNAL(stateChanged(MrtShutter::State)), SLOT(updateShutterStatus()));
     connect(shut, SIGNAL(exposureChanged(int)), ui->exposure, SLOT(setValue(int)));
 
     connect(ui->exposure, SIGNAL(valueEdited(int)), SLOT(setExposure(int)));
     connect(ui->trigShutter, SIGNAL(clicked()), SLOT(trigShutter()));
+    connect(ui->start, SIGNAL(clicked()), SLOT(onStartStop()));
 
     ui->progressBar->setHidden(true);
 
@@ -35,11 +36,25 @@ MRTwindow::~MRTwindow()
 
 
 void MRTwindow::updateShutterStatus() {
+
   ui->shutLayout->setEnabled(shut->isConnected());
+
   if ( ! shut->isConnected() ) {
+
     ui->trigShutter->setText("Disconnected");
     ui->shutterStatus->setText("Disconnected");
+    ui->start->setEnabled(false);
+
   } else {
+
+    bool canStart = shut->canStart();
+    bool valuesOK = shut->valuesOK();
+    bool exposing = ui->progressBar->isVisible();
+
+    ui->disabledShutter->setVisible( ! canStart );
+    ui->badShutter->setVisible( ! valuesOK );
+    ui->start->setEnabled( exposing || (canStart && valuesOK) );
+
     switch (shut->state()) {
     case MrtShutter::CLOSED :
       ui->trigShutter->setEnabled(true);
@@ -77,10 +92,13 @@ void MRTwindow::onStartStop() {
 
   if (ui->progressBar->isVisible()) { // in prog
     stopme = true;
+    shut->stop();
     return;
   }
 
   shut->setRepeats(1);
+  shut1A->open(false);
+  qtWait(1000);
 
   // get initial positions
   const int points1 = ui->axis1->points();
@@ -126,11 +144,36 @@ void MRTwindow::onStartStop() {
       if (stopme)
         break;
 
-      shut->start();
-      while ( shut->progress() < 1 )
+      /*
+      shut->stop();
+      qtWait(100);
+      */
+
+      while ( ! shut->canStart() )
+        qtWait(100);
+      qtWait(500);
+      shut->start(false);
+      qtWait(shut->cycle()+1000);
+      while ( shut->progress() > 0 )
         qtWait(shut, SIGNAL(progressChanged(int)));
 
-      ui->progressBar->setValue(curpoint++);
+
+  /*
+      QTimer timer;
+      timer.setSingleShot(false);
+      timer.setInterval(100);
+      QList<ObjSig> trigsProgress;
+      trigsProgress
+          << ObjSig(&timer, SIGNAL(timeout()))
+          << ObjSig(shut, SIGNAL(progressChanged(int)));
+      timer.start();
+      do {
+        qDebug() << "PROG" << shut->progress();
+        qtWait(trigsProgress); // wait start
+      } while ( shut->progress() > 0 );
+      */
+
+      ui->progressBar->setValue(++curpoint);
 
       if (stopme)
         break;
@@ -143,6 +186,8 @@ void MRTwindow::onStartStop() {
 
   }
 
+  shut->stop();
+  shut1A->close(false);
 
   // after scan positioning
   if ( ui->after->currentText() == "Start position" ) {
