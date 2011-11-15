@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>427</width>
-    <height>506</height>
+    <width>469</width>
+    <height>334</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -104,7 +104,7 @@
        <string notr="true">color: rgb(255, 0, 0);</string>
       </property>
       <property name="text">
-       <string>Shutter is disabled.</string>
+       <string>Exposure cannot be started while shutter is opened.</string>
       </property>
      </widget>
     </item>
@@ -114,54 +114,12 @@
        <string notr="true">color: rgb(255, 0, 0);</string>
       </property>
       <property name="text">
-       <string>Bad shutter parameters.</string>
+       <string>Inconsistent shutter parameters.</string>
       </property>
      </widget>
     </item>
     <item>
-     <layout class="QGridLayout" name="shutLayout">
-      <item row="0" column="1" colspan="2">
-       <widget class="QMSpinBox" name="exposure">
-        <property name="suffix">
-         <string>ms</string>
-        </property>
-        <property name="minimum">
-         <number>5</number>
-        </property>
-        <property name="maximum">
-         <number>10000</number>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Exposure:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="text">
-         <string>Shutter:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QLabel" name="shutterStatus">
-        <property name="text">
-         <string>status</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QPushButton" name="trigShutter">
-        <property name="text">
-         <string>command</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     <layout class="QVBoxLayout" name="placeShutter"/>
     </item>
     <item>
      <widget class="Line" name="line_4">
@@ -176,29 +134,11 @@
     <item>
      <widget class="QPushButton" name="start">
       <property name="text">
-       <string>Start/Stop</string>
+       <string>Start</string>
       </property>
      </widget>
     </item>
    </layout>
-  </widget>
-  <widget class="QMenuBar" name="menuBar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>427</width>
-     <height>26</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QToolBar" name="mainToolBar">
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
@@ -209,11 +149,6 @@
    <extends>QWidget</extends>
    <header>axis.h</header>
    <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>QMSpinBox</class>
-   <extends>QSpinBox</extends>
-   <header location="global">qtpvwidgets.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

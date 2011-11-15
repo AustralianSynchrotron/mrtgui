@@ -2,7 +2,8 @@
 #define MRTWINDOW_H
 
 #include <QtGui/QMainWindow>
-#include <imbl/mrtShutter.h>
+#include <imbl/mrtShutterGui.h>
+#include <imbl/shutter1A.h>
 
 namespace Ui {
     class MRTwindow;
@@ -17,7 +18,8 @@ public:
     ~MRTwindow();
 
 private:
-  MrtShutter * shut;
+  MrtShutterGui * shut;
+  Shutter1A * shut1A;
   Ui::MRTwindow *ui;
 
   bool stopme;
@@ -25,8 +27,6 @@ private:
 private slots:
 
   void updateShutterStatus();
-  void setExposure(int exp);
-  void trigShutter();
   void onStartStop();
 
 };
