@@ -4,6 +4,7 @@
 #include <QtGui/QMainWindow>
 #include <imbl/mrtShutterGui.h>
 #include <imbl/shutter1A.h>
+#include <QSettings>
 
 namespace Ui {
     class MRTwindow;
@@ -18,9 +19,12 @@ public:
     ~MRTwindow();
 
 private:
+
   MrtShutterGui * shut;
   Shutter1A * shut1A;
   Ui::MRTwindow *ui;
+
+  static QSettings localSettings;
 
   bool stopme;
 
@@ -28,6 +32,9 @@ private slots:
 
   void updateShutterStatus();
   void onStartStop();
+
+  void saveConfig();
+  void loadConfig();
 
 };
 
