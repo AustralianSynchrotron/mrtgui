@@ -67,15 +67,11 @@ void MRTwindow::updateShutterStatus() {
 
 void MRTwindow::onStartStop() {
 
-  if (ui->progressBar->isVisible()) { // in prog
+  if ( shut->component()->progress() ) { // in prog
     stopme = true;
     shut->component()->stop();
     return;
   }
-
-  //shut->component()->setRepeats(1);
-  shut1A->open(false);
-  qtWait(1000);
 
   // get initial positions
   const int points1 = ui->axis1->points();
@@ -83,6 +79,23 @@ void MRTwindow::onStartStop() {
   const double initPos1 = ui->axis1->motor->motor()->getUserPosition();
   const double initPos2 = ui->use2nd->isChecked() ?
                           ui->axis2->motor->motor()->getUserPosition()  :  0 ;
+
+
+  if ( shut->component()->exposureMode() != MrtShutter::SOFT ) {
+    shut->component()->setExposureMode(MrtShutter::SOFT);
+    qtWait(shut->component(), SIGNAL(exposureModeChanged(MrtShutter::ExposureMode)), 500);
+  }
+  if ( shut->component()->repeats() != points1 * points2 ) {
+    shut->component()->setRepeats(points1 * points2);
+    qtWait(shut->component(), SIGNAL(repeatsChanged(int)), 500);
+  }
+  shut->component()->start(true);
+  qtWait(shut->component(), SIGNAL(progressChanged(int)), 500);
+  if ( shut->component()->exposureMode() != MrtShutter::SOFT ||
+       shut->component()->repeats() != points1 * points2 ||
+       ! shut->component()->progress() ) {
+    return;
+  }
 
   double start1 = ui->axis1->start();
   double end1 = ui->axis1->end();
@@ -98,6 +111,7 @@ void MRTwindow::onStartStop() {
   }
 
   stopme = false;
+  shut->setEnabled(false);
   ui->start->setText("Stop");
   ui->progressBar->setValue(0);
   ui->progressBar->setMaximum(points1*points2);
@@ -108,7 +122,7 @@ void MRTwindow::onStartStop() {
 
     if(ui->use2nd->isChecked())
       ui->axis2->motor->motor()->goUserPosition(
-          start2 + ( pnt2 * ( end2 - start2 ) ) / (points2 - 1), true);
+          start2 + ( pnt2 * ( end2 - start2 ) ) / (points2 - 1), QCaMotor::STARTED );
 
     if (stopme)
       break;
@@ -116,44 +130,23 @@ void MRTwindow::onStartStop() {
     for( int pnt1 = 0 ; pnt1 < points1 ; pnt1++ ) {
 
       ui->axis1->motor->motor()->goUserPosition(
-          start1 + ( pnt1 * ( end1 - start1 ) ) / (points1 - 1), true);
+          start1 + ( pnt1 * ( end1 - start1 ) ) / (points1 - 1), QCaMotor::STARTED);
 
       if (stopme)
         break;
 
-      /*
-      shut->stop();
-      qtWait(100);
-      */
+      ui->axis1->motor->motor()->wait_stop();
+      if ( ui->use2nd->isChecked() )
+        ui->axis2->motor->motor()->wait_stop();
 
-      while ( ! shut->component()->canStart() )
-        qtWait(100);
-      qtWait(500);
-      shut->component()->start(false);
-      qtWait( shut->component()->repeats() * shut->component()->cycle() + 2000 );
-      while ( shut->component()->progress() > 0 )
-        qtWait(shut->component(), SIGNAL(progressChanged(int)));
-
-      /*
-      QTimer timer;
-      timer.setSingleShot(false);
-      timer.setInterval(100);
-      QList<ObjSig> trigsProgress;
-      trigsProgress
-          << ObjSig(&timer, SIGNAL(timeout()))
-          << ObjSig(shut, SIGNAL(progressChanged(int)));
-      timer.start();
-      do {
-        qDebug() << "PROG" << shut->progress();
-        qtWait(trigsProgress); // wait start
-      } while ( shut->progress() > 0 );
-      */
+      //int curProg = shut->component()->progress();
+      shut->component()->trig(true);
+      //if ( shut->component()->progress() != curProg + 1 )
 
       ui->progressBar->setValue(++curpoint);
 
       if (stopme)
         break;
-
 
     }
 
@@ -167,16 +160,19 @@ void MRTwindow::onStartStop() {
 
   // after scan positioning
   if ( ui->after->currentText() == "Start position" ) {
-    ui->axis1->motor->motor()->goUserPosition(start1, true);
+    ui->axis1->motor->motor()->goUserPosition(start1, QCaMotor::STARTED);
     if ( ui->use2nd->isChecked() )
       ui->axis2->motor->motor()->goUserPosition(start2);
   } else if ( ui->after->currentText() == "Prior position" ) {
-    ui->axis1->motor->motor()->goUserPosition(initPos1, true);
+    ui->axis1->motor->motor()->goUserPosition(initPos1, QCaMotor::STARTED);
     if ( ui->use2nd->isChecked() )
       ui->axis2->motor->motor()->goUserPosition(initPos2);
   }
+  ui->axis1->motor->motor()->wait_stop();
+  if ( ui->use2nd->isChecked() )
+    ui->axis2->motor->motor()->wait_stop();
 
-
+  shut->setEnabled(true);
   ui->start->setText("Start");
   ui->progressBar->setVisible(false);
 

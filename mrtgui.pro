@@ -31,9 +31,15 @@ IMBLRPATH = $$system(objdump -x $${IMBLEXEC} \
 
 QMAKE_LFLAGS += -Wl,-rpath,$$IMBLRPATH
 
-LIBS     += -lqcamotorgui \
+LIBS     += \
+            -lqtpv \
+            -lqtpvwidgets \
+            -lqcamotor \
+            -lqcamotor \
+            -lqcamotorgui \
             -L$$IMBLRPATH \
-            -lmrtShutterGui -lshutter1A -lcomponent -lcomponentGui
+            -lmrtShutter -lmrtShutterGui \
+            -lshutter1A -lcomponent -lcomponentGui
 
 target.files = $$[TARGET]
 target.path = $$INSTALLBASE/bin
