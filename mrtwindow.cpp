@@ -27,7 +27,7 @@ MRTwindow::MRTwindow(QWidget *parent) :
   connect(ui->axis1, SIGNAL(settingChanged()), SLOT(saveConfig()));
   connect(ui->axis2, SIGNAL(settingChanged()), SLOT(saveConfig()));
   connect(ui->use2nd, SIGNAL(toggled(bool)), SLOT(saveConfig()));
-  connect(ui->after, SIGNAL(currentIndexChanged(int)), SLOT(saveConfig()));
+  connect(ui->after, SIGNAL(activated(int)), SLOT(saveConfig()));
 
   ui->progressBar->setHidden(true);
 
@@ -115,7 +115,7 @@ void MRTwindow::onStartStop() {
   }
 
   stopme = false;
-  shut->setEnabled(false);
+  ui->control->setEnabled(false);
   ui->start->setText("Stop");
   ui->progressBar->setValue(0);
   ui->progressBar->setMaximum(points1*points2);
@@ -176,7 +176,7 @@ void MRTwindow::onStartStop() {
   if ( ui->use2nd->isChecked() )
     ui->axis2->motor->motor()->wait_stop();
 
-  shut->setEnabled(true);
+  ui->control->setEnabled(true);
   ui->start->setText("Start");
   ui->progressBar->setVisible(false);
 

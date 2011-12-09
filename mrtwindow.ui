@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>469</width>
-    <height>334</height>
+    <width>517</width>
+    <height>335</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,110 +16,119 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QLabel" name="label">
-      <property name="text">
-       <string>1st motor</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="Axis" name="axis1" native="true"/>
-    </item>
-    <item>
-     <widget class="Line" name="line">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QCheckBox" name="use2nd">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="text">
-       <string>2nd motor</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="Axis" name="axis2" native="true"/>
-    </item>
-    <item>
-     <widget class="Line" name="line_2">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QLabel" name="label_2">
-      <property name="text">
-       <string>On completion move the motor(s) to:</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QComboBox" name="after">
-      <property name="toolTip">
-       <string>Where the positioners are moved after the scan is complete</string>
-      </property>
-      <item>
-       <property name="text">
-        <string>End position</string>
+     <widget class="QWidget" name="control" native="true">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="margin">
+        <number>0</number>
        </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Start position</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Prior position</string>
-       </property>
-      </item>
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>1st motor</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="Axis" name="axis1" native="true"/>
+       </item>
+       <item>
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="use2nd">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>2nd motor</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="Axis" name="axis2" native="true"/>
+       </item>
+       <item>
+        <widget class="Line" name="line_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>On completion move the motor(s) to:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="after">
+         <property name="toolTip">
+          <string>Where the positioners are moved after the scan is complete</string>
+         </property>
+         <item>
+          <property name="text">
+           <string>End position</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Start position</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Prior position</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="Line" name="line_3">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Fast shutter control:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="placeShutter"/>
+       </item>
+       <item>
+        <widget class="QLabel" name="disabledShutter">
+         <property name="styleSheet">
+          <string notr="true">color: rgb(255, 0, 0);</string>
+         </property>
+         <property name="text">
+          <string>Exposure cannot be started while shutter is opened.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="badShutter">
+         <property name="styleSheet">
+          <string notr="true">color: rgb(255, 0, 0);</string>
+         </property>
+         <property name="text">
+          <string>Inconsistent shutter parameters.</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
-    </item>
-    <item>
-     <widget class="Line" name="line_3">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QLabel" name="label_3">
-      <property name="text">
-       <string>Fast shutter control:</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QLabel" name="disabledShutter">
-      <property name="styleSheet">
-       <string notr="true">color: rgb(255, 0, 0);</string>
-      </property>
-      <property name="text">
-       <string>Exposure cannot be started while shutter is opened.</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QLabel" name="badShutter">
-      <property name="styleSheet">
-       <string notr="true">color: rgb(255, 0, 0);</string>
-      </property>
-      <property name="text">
-       <string>Inconsistent shutter parameters.</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <layout class="QVBoxLayout" name="placeShutter"/>
     </item>
     <item>
      <widget class="Line" name="line_4">
@@ -157,15 +166,15 @@
    <sender>use2nd</sender>
    <signal>toggled(bool)</signal>
    <receiver>axis2</receiver>
-   <slot>setVisible(bool)</slot>
+   <slot>setShown(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>51</x>
-     <y>243</y>
+     <x>28</x>
+     <y>74</y>
     </hint>
     <hint type="destinationlabel">
-     <x>56</x>
-     <y>287</y>
+     <x>68</x>
+     <y>93</y>
     </hint>
    </hints>
   </connection>
