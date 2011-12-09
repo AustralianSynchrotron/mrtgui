@@ -83,19 +83,23 @@ void MRTwindow::onStartStop() {
 
   if ( shut->component()->exposureMode() != MrtShutter::SOFT ) {
     shut->component()->setExposureMode(MrtShutter::SOFT);
-    qtWait(shut->component(), SIGNAL(exposureModeChanged(MrtShutter::ExposureMode)), 500);
+    qtWait(shut->component(), SIGNAL(exposureModeChanged(MrtShutter::ExposureMode)), 1100);
   }
   if ( shut->component()->repeats() != points1 * points2 ) {
     shut->component()->setRepeats(points1 * points2);
-    qtWait(shut->component(), SIGNAL(repeatsChanged(int)), 500);
+    qtWait(shut->component(), SIGNAL(repeatsChanged(int)), 1100);
   }
   shut->component()->start(true);
-  qtWait(shut->component(), SIGNAL(progressChanged(int)), 500);
+  qtWait(shut->component(), SIGNAL(progressChanged(int)), 1100);
+  if ( ! shut->component()->progress() )
+    qtWait(shut->component(), SIGNAL(progressChanged(int)), 2100);
   if ( shut->component()->exposureMode() != MrtShutter::SOFT ||
        shut->component()->repeats() != points1 * points2 ||
        ! shut->component()->progress() ) {
+    shut->component()->stop();
     return;
   }
+
 
   double start1 = ui->axis1->start();
   double end1 = ui->axis1->end();
