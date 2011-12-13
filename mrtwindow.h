@@ -26,6 +26,9 @@ private:
 
   static QSettings localSettings;
 
+  QProcess * procBefore;
+  QProcess * procAfter;
+
   bool stopme;
 
 private slots:
@@ -35,6 +38,13 @@ private slots:
 
   void saveConfig();
   void loadConfig();
+
+  void onBrowseBefore();
+  void onBrowseAfter();
+  void onChangedBefore();
+  void onChangedAfter();
+  void onExecBefore();
+  void onExecAfter();
 
 };
 

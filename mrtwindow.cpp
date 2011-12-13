@@ -3,13 +3,20 @@
 #include "ui_mrtwindow.h"
 
 
+
+
+
+
 QSettings MRTwindow::localSettings(QDir::homePath() + "/.mrtgui", QSettings::IniFormat);
 
 MRTwindow::MRTwindow(QWidget *parent) :
-    QMainWindow(parent),
-    shut(new MrtShutterGui),
-    shut1A(new Shutter1A),
-    ui(new Ui::MRTwindow)
+  QMainWindow(parent),
+  shut(new MrtShutterGui),
+  shut1A(new Shutter1A),
+  ui(new Ui::MRTwindow),
+  procBefore(new QProcess),
+  procAfter(new QProcess),
+  stopme(false)
 {
   ui->setupUi(this);
 
@@ -29,7 +36,17 @@ MRTwindow::MRTwindow(QWidget *parent) :
   connect(ui->use2nd, SIGNAL(toggled(bool)), SLOT(saveConfig()));
   connect(ui->after, SIGNAL(activated(int)), SLOT(saveConfig()));
 
+  connect(ui->commandBefore, SIGNAL(textChanged(QString)), SLOT(onChangedBefore()));
+  connect(ui->browseBefore, SIGNAL(clicked()), SLOT(onBrowseBefore()));
+  connect(ui->execBefore, SIGNAL(clicked()), SLOT(onExecBefore()));
+  connect(ui->commandAfter, SIGNAL(textChanged(QString)), SLOT(onChangedAfter()));
+  connect(ui->browseAfter, SIGNAL(clicked()), SLOT(onBrowseAfter()));
+  connect(ui->execAfter, SIGNAL(clicked()), SLOT(onExecAfter()));
+
   ui->progressBar->setHidden(true);
+
+  onChangedBefore();
+  onChangedAfter();
 
   //shut->component()->setRepeats(1);
 
@@ -58,7 +75,9 @@ void MRTwindow::updateShutterStatus() {
 
     ui->disabledShutter->setVisible( ! canStart );
     ui->badShutter->setVisible( ! valuesOK );
-    ui->start->setEnabled( exposing || (canStart && valuesOK) );
+    ui->start->setEnabled( ! stopme  &&  valuesOK &&
+                           ! procBefore->pid()  &&  ! procAfter->pid() &&
+                           (exposing || canStart) );
 
   }
 
@@ -67,9 +86,16 @@ void MRTwindow::updateShutterStatus() {
 
 void MRTwindow::onStartStop() {
 
-  if ( shut->component()->progress() ) { // in prog
+  if ( ui->progressBar->isVisible() ) { // in prog
     stopme = true;
+    ui->start->setText("Stoppping...");
+    updateShutterStatus();
+    procBefore->kill();
+    procAfter->kill();
     shut->component()->stop();
+    ui->axis1->motor->motor()->stop();
+    if(ui->use2nd->isChecked())
+      ui->axis2->motor->motor()->stop();
     return;
   }
 
@@ -93,9 +119,14 @@ void MRTwindow::onStartStop() {
   qtWait(shut->component(), SIGNAL(progressChanged(int)), 1100);
   if ( ! shut->component()->progress() )
     qtWait(shut->component(), SIGNAL(progressChanged(int)), 2100);
+  qtWait(2000);
   if ( shut->component()->exposureMode() != MrtShutter::SOFT ||
        shut->component()->repeats() != points1 * points2 ||
        ! shut->component()->progress() ) {
+    qDebug() << "Could not prepare the MRT shutter."
+             << shut->component()->progress()
+             << shut->component()->exposureMode()
+             << shut->component()->repeats();
     shut->component()->stop();
     return;
   }
@@ -143,8 +174,48 @@ void MRTwindow::onStartStop() {
       if ( ui->use2nd->isChecked() )
         ui->axis2->motor->motor()->wait_stop();
 
+      if (stopme)
+        break;
+
+      if ( ! shut->component()->progress() ) {
+        qDebug() << "STOPEED AT" << pnt1 << pnt2;
+        shut->component()->start(true);
+        qtWait(shut->component(), SIGNAL(progressChanged(int)), 5000);
+        int count = 0;
+        while ( ! stopme && count++ < 10  && ! shut->component()->progress() ) {
+          qDebug() << "COULD NOT RESTART. ATTEMPT" << count << " of 10. Will retry in " << count << "seconds.";
+          qtWait( count * 1000 ); // wait
+          shut->component()->start(true);
+          qtWait(shut->component(), SIGNAL(progressChanged(int)), 5000);
+        }
+        if (stopme)
+          break;
+        if ( ! shut->component()->progress() ) {
+          qDebug() << "FAILED AFTER 10 ATTEMPTS. STOPPING EXPERIMENT. SORRY.";
+          onStartStop();
+        }
+      }
+      if (stopme)
+        break;
+
       //int curProg = shut->component()->progress();
+      if (procBefore->pid()) { // should never happen
+        procBefore->kill();
+        qtWait(100);
+      }
+      onExecBefore();
+      if (stopme)
+        break;
+
       shut->component()->trig(true);
+
+      if (stopme)
+        break;
+      if (procAfter->pid()) { // should never happen
+        procAfter->kill();
+        qtWait(100);
+      }
+      onExecAfter();
       //if ( shut->component()->progress() != curProg + 1 )
 
       ui->progressBar->setValue(++curpoint);
@@ -179,7 +250,8 @@ void MRTwindow::onStartStop() {
   ui->control->setEnabled(true);
   ui->start->setText("Start");
   ui->progressBar->setVisible(false);
-
+  stopme=false;
+  updateShutterStatus();
 
 }
 
@@ -198,6 +270,8 @@ void MRTwindow::saveConfig() {
   localSettings.setValue("motor2Points", ui->axis2->ui->points->value());
   localSettings.setValue("motor2Mode", ui->axis2->ui->mode->currentText());
   localSettings.setValue("afterScan", ui->after->currentText());
+  localSettings.setValue("beforeExec", ui->commandBefore->text());
+  localSettings.setValue("afterExec", ui->commandAfter->text());
 
 }
 
@@ -273,5 +347,90 @@ void MRTwindow::loadConfig() {
       ui->after->setCurrentIndex(
           ui->after->findText(
               localSettings.value("afterScan").toString() ) );
+
+  if ( localSettings.contains("beforeExec") )
+    ui->commandBefore->setText(localSettings.value("beforeExec").toString());
+  if ( localSettings.contains("afterExec") )
+    ui->commandBefore->setText(localSettings.value("afterExec").toString());
+
+}
+
+
+void MRTwindow::onBrowseBefore(){
+  QString execFile = QFileDialog::getOpenFileName();
+  ui->commandBefore->setText(execFile);
+}
+
+void MRTwindow::onBrowseAfter() {
+  QString execFile = QFileDialog::getOpenFileName();
+  ui->commandAfter->setText(execFile);
+}
+
+void MRTwindow::onChangedBefore() {
+  ui->commandBefore->setStyleSheet("");
+  ui->execBefore->setDisabled(
+        ui->commandBefore->text().isEmpty() );
+}
+
+
+void MRTwindow::onChangedAfter() {
+  ui->commandAfter->setStyleSheet("");
+  ui->execAfter->setDisabled(
+        ui->commandAfter->text().isEmpty() );
+}
+
+void MRTwindow::onExecBefore() {
+
+  if (procBefore->pid()) { // running
+    procBefore->kill();
+  } else if ( ! ui->commandBefore->text().isEmpty() ) {
+
+    ui->commandBefore->setStyleSheet("");
+    ui->commandBefore->setEnabled(false);
+    ui->browseBefore->setEnabled(false);
+    ui->execBefore->setText("Stop");
+
+    procBefore->start( "/bin/sh -c " + ui->commandBefore->text() );
+    updateShutterStatus();
+    while (procBefore->pid())
+      qtWait(procBefore, SIGNAL(stateChanged(QProcess::ProcessState)));
+    updateShutterStatus();
+    qDebug() << procBefore->readAll();
+    if ( procBefore->exitCode() )
+      ui->commandBefore->setStyleSheet("color: rgba(255, 0, 0);");
+
+    ui->execBefore->setText("Exec");
+    ui->commandBefore->setEnabled(true);
+    ui->browseBefore->setEnabled(true);
+
+  }
+
+}
+
+void MRTwindow::onExecAfter() {
+
+  if (procAfter->pid()) { // running
+    procAfter->kill();
+  } else if ( ! ui->commandAfter->text().isEmpty() ) {
+
+    ui->commandAfter->setStyleSheet("");
+    ui->commandAfter->setEnabled(false);
+    ui->browseAfter->setEnabled(false);
+    ui->execAfter->setText("Stop");
+
+    procAfter->start( "/bin/sh -c " + ui->commandAfter->text() );
+    updateShutterStatus();
+    while (procAfter->pid())
+      qtWait(procAfter, SIGNAL(stateChanged(QProcess::ProcessState)));
+    updateShutterStatus();
+    qDebug() << procAfter->readAll();
+    if ( procAfter->exitCode() )
+      ui->commandAfter->setStyleSheet("color: rgba(255, 0, 0, 128);");
+
+    ui->execAfter->setText("Exec");
+    ui->commandAfter->setEnabled(true);
+    ui->browseAfter->setEnabled(true);
+
+  }
 
 }
