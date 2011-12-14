@@ -388,7 +388,7 @@ void MRTwindow::onExecBefore() {
     ui->browseBefore->setEnabled(false);
     ui->execBefore->setText("Stop");
 
-    procBefore->start( "/bin/sh -c " + ui->commandBefore->text() );
+    procBefore->start( ui->commandBefore->text() );
     updateStartStatus();
     while (procBefore->pid())
       qtWait(procBefore, SIGNAL(stateChanged(QProcess::ProcessState)));
@@ -416,7 +416,7 @@ void MRTwindow::onExecAfter() {
     ui->browseAfter->setEnabled(false);
     ui->execAfter->setText("Stop");
 
-    procAfter->start( "/bin/sh -c " + ui->commandAfter->text() );
+    procAfter->start( ui->commandAfter->text() );
     updateStartStatus();
     while (procAfter->pid())
       qtWait(procAfter, SIGNAL(stateChanged(QProcess::ProcessState)));
