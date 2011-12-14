@@ -34,6 +34,8 @@ private:
 private slots:
 
   void updateShutterStatus();
+  void updateStartStatus();
+
   void onStartStop();
 
   void saveConfig();

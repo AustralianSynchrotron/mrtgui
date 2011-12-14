@@ -27,6 +27,8 @@ MRTwindow::MRTwindow(QWidget *parent) :
   connect(shut->component(), SIGNAL(canStartChanged(bool)), SLOT(updateShutterStatus()));
   connect(shut->component(), SIGNAL(valuesOKchanged(bool)), SLOT(updateShutterStatus()));
   connect(shut->component(), SIGNAL(connectionChanged(bool)), SLOT(updateShutterStatus()));
+  connect(ui->axis1->motor->motor(), SIGNAL(changedMoving(bool)), SLOT(updateStartStatus()));
+  connect(ui->axis2->motor->motor(), SIGNAL(changedMoving(bool)), SLOT(updateStartStatus()));
 
   connect(ui->start, SIGNAL(clicked()), SLOT(onStartStop()));
 
@@ -62,24 +64,13 @@ MRTwindow::~MRTwindow() {
 void MRTwindow::updateShutterStatus() {
 
   if ( ! shut->component()->isConnected() ) {
-
-    ui->start->setEnabled(false);
     ui->disabledShutter->setVisible(false);
     ui->badShutter->setVisible(false);
-
   } else {
-
-    bool canStart = shut->component()->canStart();
-    bool valuesOK = shut->component()->valuesOK();
-    bool exposing = ui->progressBar->isVisible();
-
-    ui->disabledShutter->setVisible( ! canStart );
-    ui->badShutter->setVisible( ! valuesOK );
-    ui->start->setEnabled( ! stopme  &&  valuesOK &&
-                           ! procBefore->pid()  &&  ! procAfter->pid() &&
-                           (exposing || canStart) );
-
+    ui->disabledShutter->setVisible( ! shut->component()->canStart() );
+    ui->badShutter->setVisible( ! shut->component()->valuesOK() );
   }
+  updateStartStatus();
 
 }
 
@@ -89,7 +80,7 @@ void MRTwindow::onStartStop() {
   if ( ui->progressBar->isVisible() ) { // in prog
     stopme = true;
     ui->start->setText("Stoppping...");
-    updateShutterStatus();
+    updateStartStatus();
     procBefore->kill();
     procAfter->kill();
     shut->component()->stop();
@@ -146,6 +137,7 @@ void MRTwindow::onStartStop() {
   }
 
   stopme = false;
+  updateStartStatus();
   ui->control->setEnabled(false);
   ui->start->setText("Stop");
   ui->progressBar->setValue(0);
@@ -232,8 +224,12 @@ void MRTwindow::onStartStop() {
 
   shut->component()->stop();
   shut1A->close(false);
+  ui->start->setText("Finishing...");
+  stopme=true;
+  updateStartStatus();
 
   // after scan positioning
+
   if ( ui->after->currentText() == "Start position" ) {
     ui->axis1->motor->motor()->goUserPosition(start1, QCaMotor::STARTED);
     if ( ui->use2nd->isChecked() )
@@ -251,7 +247,7 @@ void MRTwindow::onStartStop() {
   ui->start->setText("Start");
   ui->progressBar->setVisible(false);
   stopme=false;
-  updateShutterStatus();
+  updateStartStatus();
 
 }
 
@@ -370,6 +366,7 @@ void MRTwindow::onChangedBefore() {
   ui->commandBefore->setStyleSheet("");
   ui->execBefore->setDisabled(
         ui->commandBefore->text().isEmpty() );
+  saveConfig();
 }
 
 
@@ -377,6 +374,7 @@ void MRTwindow::onChangedAfter() {
   ui->commandAfter->setStyleSheet("");
   ui->execAfter->setDisabled(
         ui->commandAfter->text().isEmpty() );
+  saveConfig();
 }
 
 void MRTwindow::onExecBefore() {
@@ -391,10 +389,10 @@ void MRTwindow::onExecBefore() {
     ui->execBefore->setText("Stop");
 
     procBefore->start( "/bin/sh -c " + ui->commandBefore->text() );
-    updateShutterStatus();
+    updateStartStatus();
     while (procBefore->pid())
       qtWait(procBefore, SIGNAL(stateChanged(QProcess::ProcessState)));
-    updateShutterStatus();
+    updateStartStatus();
     qDebug() << procBefore->readAll();
     if ( procBefore->exitCode() )
       ui->commandBefore->setStyleSheet("color: rgba(255, 0, 0);");
@@ -419,10 +417,10 @@ void MRTwindow::onExecAfter() {
     ui->execAfter->setText("Stop");
 
     procAfter->start( "/bin/sh -c " + ui->commandAfter->text() );
-    updateShutterStatus();
+    updateStartStatus();
     while (procAfter->pid())
       qtWait(procAfter, SIGNAL(stateChanged(QProcess::ProcessState)));
-    updateShutterStatus();
+    updateStartStatus();
     qDebug() << procAfter->readAll();
     if ( procAfter->exitCode() )
       ui->commandAfter->setStyleSheet("color: rgba(255, 0, 0, 128);");
@@ -433,4 +431,22 @@ void MRTwindow::onExecAfter() {
 
   }
 
+}
+
+void MRTwindow::updateStartStatus() {
+  bool enabled;
+  if ( ! shut->component()->isConnected() ) {
+    enabled = false;
+  } else if ( ui->progressBar->isVisible() ) {
+    enabled = ! stopme;
+  } else {
+    enabled = shut->component()->canStart() && shut->component()->valuesOK() &&
+             ! procBefore->pid()  &&  ! procAfter->pid() &&
+             ui->axis1->motor->motor()->isConnected() &&
+             ! ui->axis1->motor->motor()->isMoving();
+    if ( enabled && ui->use2nd->isChecked() )
+      enabled = ui->axis2->motor->motor()->isConnected() &&
+                ! ui->axis2->motor->motor()->isMoving();
+  }
+  ui->start->setEnabled(enabled);
 }
