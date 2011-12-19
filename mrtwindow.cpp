@@ -347,7 +347,7 @@ void MRTwindow::loadConfig() {
   if ( localSettings.contains("beforeExec") )
     ui->commandBefore->setText(localSettings.value("beforeExec").toString());
   if ( localSettings.contains("afterExec") )
-    ui->commandBefore->setText(localSettings.value("afterExec").toString());
+    ui->commandAfter->setText(localSettings.value("afterExec").toString());
 
 }
 
