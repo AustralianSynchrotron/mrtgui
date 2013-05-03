@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>517</width>
-    <height>408</height>
+    <height>480</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -184,18 +184,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="comboBox">
-           <item>
-            <property name="text">
-             <string>MRT shutter in 1A</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Imaging Shutter</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="shutterSelection"/>
          </item>
         </layout>
        </item>

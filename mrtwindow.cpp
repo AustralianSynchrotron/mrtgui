@@ -1,6 +1,176 @@
 #include "mrtwindow.h"
-#include <imbl/mrtShutter.h>
 #include "ui_mrtwindow.h"
+
+
+
+
+
+bool  GeneralFastShutter::isConnected() const {
+  if (mrtshut) return mrtshut->component()->isConnected();
+  if (fastshut) return fastshut->sh->isConnected();
+  return false;
+}
+
+GeneralFastShutter::ExposureMode GeneralFastShutter::exposureMode() const {
+  if (mrtshut) {
+    switch (mrtshut->component()->exposureMode()) {
+    case MrtShutter::TIME : return TIME;
+    case MrtShutter::SOFT : return SOFT;
+    }
+  } if (fastshut) {
+    switch (fastshut->sh->exposureMode()) {
+    case FastShutterBase::TIME : return TIME;
+    case FastShutterBase::SOFT : return SOFT;
+    }
+  }
+  return TIME;
+}
+
+int GeneralFastShutter::repeats() const {
+  if (mrtshut) return mrtshut->component()->repeats();
+  if (fastshut) return fastshut->sh->repeats();
+  return 0;
+}
+
+int GeneralFastShutter::progress() const {
+  if (mrtshut) return mrtshut->component()->progress();
+  if (fastshut) return fastshut->sh->progress();
+  return 0;
+}
+
+bool GeneralFastShutter::canStart() const {
+  if (mrtshut) return mrtshut->component()->canStart();
+  if (fastshut) return fastshut->sh->canStart();
+  return false;
+}
+
+bool GeneralFastShutter::valuesOK() const {
+  if (mrtshut) return mrtshut->component()->valuesOK();
+  if (fastshut) return fastshut->sh->valuesOK();
+  return false;
+}
+
+void GeneralFastShutter::start(bool beAwareOf1A) {
+  if (mrtshut) mrtshut->component()->start(beAwareOf1A);
+  if (fastshut) fastshut->sh->start(beAwareOf1A);
+}
+
+void GeneralFastShutter::trig(bool wait) {
+  if (mrtshut) mrtshut->component()->trig(wait);
+  if (fastshut) fastshut->sh->trig(wait);
+}
+
+void GeneralFastShutter::stop() {
+  if (mrtshut) mrtshut->component()->stop();
+  if (fastshut) fastshut->sh->stop();
+}
+
+void GeneralFastShutter::setExposureMode(GeneralFastShutter::ExposureMode val) {
+  if (mrtshut) {
+    switch (val) {
+    case TIME : mrtshut->component()->setExposureMode(MrtShutter::TIME); return;
+    case SOFT : mrtshut->component()->setExposureMode(MrtShutter::SOFT); return;
+    }
+  } if (fastshut) {
+    switch (val) {
+    case TIME : fastshut->sh->setExposureMode(FastShutterBase::TIME); return;
+    case SOFT : fastshut->sh->setExposureMode(FastShutterBase::SOFT); return;
+    }
+  }
+}
+
+void GeneralFastShutter::setRepeats(int val) {
+  if (mrtshut) mrtshut->component()->setRepeats(val);
+  if (fastshut) fastshut->sh->setRepeats(val);
+}
+
+
+
+const QString GeneralFastShutter::shutterName(GeneralFastShutter::KnownShutters shut) {
+  switch (shut) {
+  case IS01: return "Imaging shutter 1";
+  case MRT: return "Fast MRT shutter";
+  default: return QString();
+  }
+}
+
+
+GeneralFastShutter::GeneralFastShutter(QWidget * parent) :
+  QWidget(parent),
+  horizontalLayout(new QHBoxLayout(this)),
+  mrtshut(0),
+  fastshut(0)
+{
+  setShutter(MRT);
+}
+
+void GeneralFastShutter::setShutter(GeneralFastShutter::KnownShutters shut) {
+
+  if (mrtshut) {
+    horizontalLayout->removeWidget(mrtshut);
+    delete mrtshut;
+    mrtshut=0;
+  }
+  else if (fastshut) {
+    horizontalLayout->removeWidget(fastshut);
+    delete fastshut;
+    fastshut=0;
+  }
+
+  switch (shut) {
+  case IS01 :
+    fastshut = new FastShutterWidget(this);
+    fastshut->sh->setBase("SR08ID01IS01:");
+    horizontalLayout->addWidget(fastshut);
+    connect(fastshut->sh, SIGNAL(connectionChanged(bool)),
+            SIGNAL(connectionChanged(bool)));
+    connect(fastshut->sh, SIGNAL(exposureModeChanged(FastShutterBase::ExposureMode)),
+            SLOT(updateExposureMode()));
+    connect(fastshut->sh, SIGNAL(repeatsChanged(int)),
+            SIGNAL(repeatsChanged(int)));
+    connect(fastshut->sh, SIGNAL(progressChanged(int)),
+            SIGNAL(progressChanged(int)));
+    connect(fastshut->sh, SIGNAL(canStartChanged(bool)),
+            SIGNAL(canStartChanged(bool)));
+    connect(fastshut->sh, SIGNAL(valuesOKchanged(bool)),
+            SIGNAL(valuesOKchanged(bool)));
+    break;
+  case MRT :
+    mrtshut = new MrtShutterGui(this);
+    horizontalLayout->addWidget(mrtshut);
+    connect(mrtshut->component(), SIGNAL(connectionChanged(bool)),
+            SIGNAL(connectionChanged(bool)));
+    connect(mrtshut->component(), SIGNAL(exposureModeChanged(MrtShutter::ExposureMode)),
+            SLOT(updateExposureMode()));
+    connect(mrtshut->component(), SIGNAL(repeatsChanged(int)),
+            SIGNAL(repeatsChanged(int)));
+    connect(mrtshut->component(), SIGNAL(progressChanged(int)),
+            SIGNAL(progressChanged(int)));
+    connect(mrtshut->component(), SIGNAL(canStartChanged(bool)),
+            SIGNAL(canStartChanged(bool)));
+    connect(mrtshut->component(), SIGNAL(valuesOKchanged(bool)),
+            SIGNAL(valuesOKchanged(bool)));
+    break;
+  default :
+    break;
+  }
+}
+
+void GeneralFastShutter::updateExposureMode() {
+  if (mrtshut) {
+    switch (mrtshut->component()->exposureMode()) {
+    case MrtShutter::TIME : emit exposureModeChanged(TIME); break;
+    case MrtShutter::SOFT : emit exposureModeChanged(SOFT); break;
+    }
+  } if (fastshut) {
+    switch (fastshut->sh->exposureMode()) {
+    case FastShutterBase::TIME : emit exposureModeChanged(TIME); break;
+    case FastShutterBase::SOFT : emit exposureModeChanged(SOFT); break;
+    }
+  }
+}
+
+
 
 
 
@@ -23,10 +193,16 @@ MRTwindow::MRTwindow(QWidget *parent) :
 
   ui->placeShutter->addWidget(shutfast);
 
-  connect(shutfast->component(), SIGNAL(progressChanged(int)), SLOT(updateShutterStatus()));
-  connect(shutfast->component(), SIGNAL(canStartChanged(bool)), SLOT(updateShutterStatus()));
-  connect(shutfast->component(), SIGNAL(valuesOKchanged(bool)), SLOT(updateShutterStatus()));
-  connect(shutfast->component(), SIGNAL(connectionChanged(bool)), SLOT(updateShutterStatus()));
+  ui->shutterSelection->insertItem(GeneralFastShutter::MRT,
+                                   GeneralFastShutter::shutterName(GeneralFastShutter::MRT));
+  ui->shutterSelection->insertItem(GeneralFastShutter::IS01,
+                                   GeneralFastShutter::shutterName(GeneralFastShutter::IS01));
+
+  connect(ui->shutterSelection, SIGNAL(currentIndexChanged(int)), SLOT(onShutterChange()));
+  connect(shutfast, SIGNAL(progressChanged(int)), SLOT(updateShutterStatus()));
+  connect(shutfast, SIGNAL(canStartChanged(bool)), SLOT(updateShutterStatus()));
+  connect(shutfast, SIGNAL(valuesOKchanged(bool)), SLOT(updateShutterStatus()));
+  connect(shutfast, SIGNAL(connectionChanged(bool)), SLOT(updateShutterStatus()));
   connect(ui->axis1->motor->motor(), SIGNAL(changedMoving(bool)), SLOT(updateStartStatus()));
   connect(ui->axis2->motor->motor(), SIGNAL(changedMoving(bool)), SLOT(updateStartStatus()));
 
@@ -60,20 +236,23 @@ MRTwindow::~MRTwindow() {
   delete shut1A;
 }
 
+void MRTwindow::onShutterChange() {
+  shutfast->setShutter( (GeneralFastShutter::KnownShutters) ui->shutterSelection->currentIndex() );
+}
+
 
 void MRTwindow::updateShutterStatus() {
 
-  if ( ! shutfast->component()->isConnected() ) {
+  if ( ! shutfast->isConnected() ) {
     ui->disabledShutter->setVisible(false);
     ui->badShutter->setVisible(false);
   } else {
-    ui->disabledShutter->setVisible( ! shutfast->component()->canStart() );
-    ui->badShutter->setVisible( ! shutfast->component()->valuesOK() );
+    ui->disabledShutter->setVisible( ! shutfast->canStart() );
+    ui->badShutter->setVisible( ! shutfast->valuesOK() );
   }
   updateStartStatus();
 
 }
-
 
 void MRTwindow::onStartStop() {
 
@@ -83,7 +262,7 @@ void MRTwindow::onStartStop() {
     updateStartStatus();
     procBefore->kill();
     procAfter->kill();
-    shutfast->component()->stop();
+    shutfast->stop();
     ui->axis1->motor->motor()->stop();
     if(ui->use2nd->isChecked())
       ui->axis2->motor->motor()->stop();
@@ -98,27 +277,27 @@ void MRTwindow::onStartStop() {
                           ui->axis2->motor->motor()->getUserPosition()  :  0 ;
 
 
-  if ( shutfast->component()->exposureMode() != MrtShutter::SOFT ) {
-    shutfast->component()->setExposureMode(MrtShutter::SOFT);
-    qtWait(shutfast->component(), SIGNAL(exposureModeChanged(MrtShutter::ExposureMode)), 1100);
+  if ( shutfast->exposureMode() != GeneralFastShutter::SOFT ) {
+    shutfast->setExposureMode(GeneralFastShutter::SOFT);
+    qtWait(shutfast, SIGNAL(exposureModeChanged(GeneralFastShutter::ExposureMode)), 1100);
   }
-  if ( shutfast->component()->repeats() != points1 * points2 ) {
-    shutfast->component()->setRepeats(points1 * points2);
-    qtWait(shutfast->component(), SIGNAL(repeatsChanged(int)), 1100);
+  if ( shutfast->repeats() != points1 * points2 ) {
+    shutfast->setRepeats(points1 * points2);
+    qtWait(shutfast, SIGNAL(repeatsChanged(int)), 1100);
   }
-  shutfast->component()->start(true);
-  qtWait(shutfast->component(), SIGNAL(progressChanged(int)), 1100);
-  if ( ! shutfast->component()->progress() )
-    qtWait(shutfast->component(), SIGNAL(progressChanged(int)), 2100);
+  shutfast->start(true);
+  qtWait(shutfast, SIGNAL(progressChanged(int)), 1100);
+  if ( ! shutfast->progress() )
+    qtWait(shutfast, SIGNAL(progressChanged(int)), 2100);
   qtWait(2000);
-  if ( shutfast->component()->exposureMode() != MrtShutter::SOFT ||
-       shutfast->component()->repeats() != points1 * points2 ||
-       ! shutfast->component()->progress() ) {
+  if ( shutfast->exposureMode() != GeneralFastShutter::SOFT ||
+       shutfast->repeats() != points1 * points2 ||
+       ! shutfast->progress() ) {
     qDebug() << "Could not prepare the MRT shutter."
-             << shutfast->component()->progress()
-             << shutfast->component()->exposureMode()
-             << shutfast->component()->repeats();
-    shutfast->component()->stop();
+             << shutfast->progress()
+             << shutfast->exposureMode()
+             << shutfast->repeats();
+    shutfast->stop();
     return;
   }
 
@@ -169,20 +348,20 @@ void MRTwindow::onStartStop() {
       if (stopme)
         break;
 
-      if ( ! shutfast->component()->progress() ) {
+      if ( ! shutfast->progress() ) {
         qDebug() << "STOPEED AT" << pnt1 << pnt2;
-        shutfast->component()->start(true);
-        qtWait(shutfast->component(), SIGNAL(progressChanged(int)), 5000);
+        shutfast->start(true);
+        qtWait(shutfast, SIGNAL(progressChanged(int)), 5000);
         int count = 0;
-        while ( ! stopme && count++ < 10  && ! shutfast->component()->progress() ) {
+        while ( ! stopme && count++ < 10  && ! shutfast->progress() ) {
           qDebug() << "COULD NOT RESTART. ATTEMPT" << count << " of 10. Will retry in " << count << "seconds.";
           qtWait( count * 1000 ); // wait
-          shutfast->component()->start(true);
-          qtWait(shutfast->component(), SIGNAL(progressChanged(int)), 5000);
+          shutfast->start(true);
+          qtWait(shutfast, SIGNAL(progressChanged(int)), 5000);
         }
         if (stopme)
           break;
-        if ( ! shutfast->component()->progress() ) {
+        if ( ! shutfast->progress() ) {
           qDebug() << "FAILED AFTER 10 ATTEMPTS. STOPPING EXPERIMENT. SORRY.";
           onStartStop();
         }
@@ -199,7 +378,7 @@ void MRTwindow::onStartStop() {
       if (stopme)
         break;
 
-      shutfast->component()->trig(true);
+      shutfast->trig(true);
 
       if (stopme)
         break;
@@ -222,8 +401,8 @@ void MRTwindow::onStartStop() {
 
   }
 
-  shutfast->component()->stop();
-  shut1A->close(false);
+  shutfast->stop();
+  //// shut1A->close(false);
   ui->start->setText("Finishing...");
   stopme=true;
   updateStartStatus();
@@ -435,12 +614,12 @@ void MRTwindow::onExecAfter() {
 
 void MRTwindow::updateStartStatus() {
   bool enabled;
-  if ( ! shutfast->component()->isConnected() ) {
+  if ( ! shutfast->isConnected() ) {
     enabled = false;
   } else if ( ui->progressBar->isVisible() ) {
     enabled = ! stopme;
   } else {
-    enabled = shutfast->component()->canStart() && shutfast->component()->valuesOK() &&
+    enabled = shutfast->canStart() && shutfast->valuesOK() &&
              ! procBefore->pid()  &&  ! procAfter->pid() &&
              ui->axis1->motor->motor()->isConnected() &&
              ! ui->axis1->motor->motor()->isMoving();

@@ -37,12 +37,15 @@ LIBS     += \
             -lqcamotor \
             -lqcamotor \
             -lqcamotorgui \
+            -lfastShutterBase \
+            -lfastShutterUi \
             -L$$IMBLRPATH \
             -lmrtShutter -lmrtShutterGui \
             -lshutter1A -lcomponent -lcomponentGui
 
+
 target.files = $$[TARGET]
-target.path = $$INSTALLBASE/bin
+target.path = $$INSTALLBASE/lib/imbl
 INSTALLS += target
 
 
