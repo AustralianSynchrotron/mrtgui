@@ -10,6 +10,8 @@ namespace Ui {
     class MRTwindow;
 }
 
+class GeneralFastShutter;
+
 class MRTwindow : public QMainWindow
 {
     Q_OBJECT
@@ -20,7 +22,7 @@ public:
 
 private:
 
-  MrtShutterGui * shut;
+  GeneralFastShutter * shutfast;
   Shutter1A * shut1A;
   Ui::MRTwindow *ui;
 

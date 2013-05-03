@@ -6,12 +6,11 @@
 
 
 
-
 QSettings MRTwindow::localSettings(QDir::homePath() + "/.mrtgui", QSettings::IniFormat);
 
 MRTwindow::MRTwindow(QWidget *parent) :
   QMainWindow(parent),
-  shut(new MrtShutterGui),
+  shutfast(new GeneralFastShutter),
   shut1A(new Shutter1A),
   ui(new Ui::MRTwindow),
   procBefore(new QProcess),
@@ -21,12 +20,13 @@ MRTwindow::MRTwindow(QWidget *parent) :
   ui->setupUi(this);
 
   ui->axis2->setVisible(ui->use2nd->isChecked());
-  ui->placeShutter->addWidget(shut);
 
-  connect(shut->component(), SIGNAL(progressChanged(int)), SLOT(updateShutterStatus()));
-  connect(shut->component(), SIGNAL(canStartChanged(bool)), SLOT(updateShutterStatus()));
-  connect(shut->component(), SIGNAL(valuesOKchanged(bool)), SLOT(updateShutterStatus()));
-  connect(shut->component(), SIGNAL(connectionChanged(bool)), SLOT(updateShutterStatus()));
+  ui->placeShutter->addWidget(shutfast);
+
+  connect(shutfast->component(), SIGNAL(progressChanged(int)), SLOT(updateShutterStatus()));
+  connect(shutfast->component(), SIGNAL(canStartChanged(bool)), SLOT(updateShutterStatus()));
+  connect(shutfast->component(), SIGNAL(valuesOKchanged(bool)), SLOT(updateShutterStatus()));
+  connect(shutfast->component(), SIGNAL(connectionChanged(bool)), SLOT(updateShutterStatus()));
   connect(ui->axis1->motor->motor(), SIGNAL(changedMoving(bool)), SLOT(updateStartStatus()));
   connect(ui->axis2->motor->motor(), SIGNAL(changedMoving(bool)), SLOT(updateStartStatus()));
 
@@ -56,19 +56,19 @@ MRTwindow::MRTwindow(QWidget *parent) :
 
 MRTwindow::~MRTwindow() {
   delete ui;
-  delete shut;
+  delete shutfast;
   delete shut1A;
 }
 
 
 void MRTwindow::updateShutterStatus() {
 
-  if ( ! shut->component()->isConnected() ) {
+  if ( ! shutfast->component()->isConnected() ) {
     ui->disabledShutter->setVisible(false);
     ui->badShutter->setVisible(false);
   } else {
-    ui->disabledShutter->setVisible( ! shut->component()->canStart() );
-    ui->badShutter->setVisible( ! shut->component()->valuesOK() );
+    ui->disabledShutter->setVisible( ! shutfast->component()->canStart() );
+    ui->badShutter->setVisible( ! shutfast->component()->valuesOK() );
   }
   updateStartStatus();
 
@@ -83,7 +83,7 @@ void MRTwindow::onStartStop() {
     updateStartStatus();
     procBefore->kill();
     procAfter->kill();
-    shut->component()->stop();
+    shutfast->component()->stop();
     ui->axis1->motor->motor()->stop();
     if(ui->use2nd->isChecked())
       ui->axis2->motor->motor()->stop();
@@ -98,27 +98,27 @@ void MRTwindow::onStartStop() {
                           ui->axis2->motor->motor()->getUserPosition()  :  0 ;
 
 
-  if ( shut->component()->exposureMode() != MrtShutter::SOFT ) {
-    shut->component()->setExposureMode(MrtShutter::SOFT);
-    qtWait(shut->component(), SIGNAL(exposureModeChanged(MrtShutter::ExposureMode)), 1100);
+  if ( shutfast->component()->exposureMode() != MrtShutter::SOFT ) {
+    shutfast->component()->setExposureMode(MrtShutter::SOFT);
+    qtWait(shutfast->component(), SIGNAL(exposureModeChanged(MrtShutter::ExposureMode)), 1100);
   }
-  if ( shut->component()->repeats() != points1 * points2 ) {
-    shut->component()->setRepeats(points1 * points2);
-    qtWait(shut->component(), SIGNAL(repeatsChanged(int)), 1100);
+  if ( shutfast->component()->repeats() != points1 * points2 ) {
+    shutfast->component()->setRepeats(points1 * points2);
+    qtWait(shutfast->component(), SIGNAL(repeatsChanged(int)), 1100);
   }
-  shut->component()->start(true);
-  qtWait(shut->component(), SIGNAL(progressChanged(int)), 1100);
-  if ( ! shut->component()->progress() )
-    qtWait(shut->component(), SIGNAL(progressChanged(int)), 2100);
+  shutfast->component()->start(true);
+  qtWait(shutfast->component(), SIGNAL(progressChanged(int)), 1100);
+  if ( ! shutfast->component()->progress() )
+    qtWait(shutfast->component(), SIGNAL(progressChanged(int)), 2100);
   qtWait(2000);
-  if ( shut->component()->exposureMode() != MrtShutter::SOFT ||
-       shut->component()->repeats() != points1 * points2 ||
-       ! shut->component()->progress() ) {
+  if ( shutfast->component()->exposureMode() != MrtShutter::SOFT ||
+       shutfast->component()->repeats() != points1 * points2 ||
+       ! shutfast->component()->progress() ) {
     qDebug() << "Could not prepare the MRT shutter."
-             << shut->component()->progress()
-             << shut->component()->exposureMode()
-             << shut->component()->repeats();
-    shut->component()->stop();
+             << shutfast->component()->progress()
+             << shutfast->component()->exposureMode()
+             << shutfast->component()->repeats();
+    shutfast->component()->stop();
     return;
   }
 
@@ -169,20 +169,20 @@ void MRTwindow::onStartStop() {
       if (stopme)
         break;
 
-      if ( ! shut->component()->progress() ) {
+      if ( ! shutfast->component()->progress() ) {
         qDebug() << "STOPEED AT" << pnt1 << pnt2;
-        shut->component()->start(true);
-        qtWait(shut->component(), SIGNAL(progressChanged(int)), 5000);
+        shutfast->component()->start(true);
+        qtWait(shutfast->component(), SIGNAL(progressChanged(int)), 5000);
         int count = 0;
-        while ( ! stopme && count++ < 10  && ! shut->component()->progress() ) {
+        while ( ! stopme && count++ < 10  && ! shutfast->component()->progress() ) {
           qDebug() << "COULD NOT RESTART. ATTEMPT" << count << " of 10. Will retry in " << count << "seconds.";
           qtWait( count * 1000 ); // wait
-          shut->component()->start(true);
-          qtWait(shut->component(), SIGNAL(progressChanged(int)), 5000);
+          shutfast->component()->start(true);
+          qtWait(shutfast->component(), SIGNAL(progressChanged(int)), 5000);
         }
         if (stopme)
           break;
-        if ( ! shut->component()->progress() ) {
+        if ( ! shutfast->component()->progress() ) {
           qDebug() << "FAILED AFTER 10 ATTEMPTS. STOPPING EXPERIMENT. SORRY.";
           onStartStop();
         }
@@ -199,7 +199,7 @@ void MRTwindow::onStartStop() {
       if (stopme)
         break;
 
-      shut->component()->trig(true);
+      shutfast->component()->trig(true);
 
       if (stopme)
         break;
@@ -222,7 +222,7 @@ void MRTwindow::onStartStop() {
 
   }
 
-  shut->component()->stop();
+  shutfast->component()->stop();
   shut1A->close(false);
   ui->start->setText("Finishing...");
   stopme=true;
@@ -435,12 +435,12 @@ void MRTwindow::onExecAfter() {
 
 void MRTwindow::updateStartStatus() {
   bool enabled;
-  if ( ! shut->component()->isConnected() ) {
+  if ( ! shutfast->component()->isConnected() ) {
     enabled = false;
   } else if ( ui->progressBar->isVisible() ) {
     enabled = ! stopme;
   } else {
-    enabled = shut->component()->canStart() && shut->component()->valuesOK() &&
+    enabled = shutfast->component()->canStart() && shutfast->component()->valuesOK() &&
              ! procBefore->pid()  &&  ! procAfter->pid() &&
              ui->axis1->motor->motor()->isConnected() &&
              ! ui->axis1->motor->motor()->isMoving();
