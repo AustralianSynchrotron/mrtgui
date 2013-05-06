@@ -378,7 +378,16 @@ void MRTwindow::onStartStop() {
       if (stopme)
         break;
 
+      const int progBefore = shutfast->progress();
       shutfast->trig(true);
+      if ( shutfast->progress() == progBefore ) {
+        qDebug() << "Warning! Did not expose, trying again.";
+        shutfast->trig(true);
+        if ( shutfast->progress() == progBefore )
+          qDebug() << "Error! Exposure skipped after two failed attempts at"
+                   << pnt2 << pnt1 << ".";
+      }
+
 
       if (stopme)
         break;
@@ -387,7 +396,6 @@ void MRTwindow::onStartStop() {
         qtWait(100);
       }
       onExecAfter();
-      //if ( shut->component()->progress() != curProg + 1 )
 
       ui->progressBar->setValue(++curpoint);
 

@@ -108,7 +108,10 @@ void Axis::widthCh(double val){
 
 void Axis::stepCh(double val){
   if (val != 0.0) {
-    ui->points->setValue( 1 + ( ui->width->value() / val ) );
+    // ui->points->setValue( 1 + ( ui->width->value() / val ) );
+    double newwidth =  val * (ui->points->value()-1) ;
+    ui->width->setValue(newwidth);
+    widthCh(newwidth);
     ui->step->setStyleSheet(goodStyle);
   } else
     ui->step->setStyleSheet(badStyle);
