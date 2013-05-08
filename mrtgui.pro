@@ -45,7 +45,7 @@ LIBS     += \
 
 
 target.files = $$[TARGET]
-target.path = $$INSTALLBASE/lib/imbl
+target.path = $$INSTALLBASE/bin
 INSTALLS += target
 
 
