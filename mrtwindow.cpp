@@ -198,22 +198,22 @@ MRTwindow::MRTwindow(QWidget *parent) :
   ui->shutterSelection->insertItem(GeneralFastShutter::IS01,
                                    GeneralFastShutter::shutterName(GeneralFastShutter::IS01));
 
-  connect(ui->shutterSelection, SIGNAL(currentIndexChanged(int)), SLOT(onShutterChange()));
   connect(shutfast, SIGNAL(progressChanged(int)), SLOT(updateShutterStatus()));
   connect(shutfast, SIGNAL(canStartChanged(bool)), SLOT(updateShutterStatus()));
   connect(shutfast, SIGNAL(valuesOKchanged(bool)), SLOT(updateShutterStatus()));
   connect(shutfast, SIGNAL(connectionChanged(bool)), SLOT(updateShutterStatus()));
   connect(ui->axis1->motor->motor(), SIGNAL(changedMoving(bool)), SLOT(updateStartStatus()));
   connect(ui->axis2->motor->motor(), SIGNAL(changedMoving(bool)), SLOT(updateStartStatus()));
-
+  connect(ui->shutterSelection, SIGNAL(currentIndexChanged(int)), SLOT(onShutterChange()));
   connect(ui->start, SIGNAL(clicked()), SLOT(onStartStop()));
 
   loadConfig();
+
   connect(ui->axis1, SIGNAL(settingChanged()), SLOT(saveConfig()));
   connect(ui->axis2, SIGNAL(settingChanged()), SLOT(saveConfig()));
   connect(ui->use2nd, SIGNAL(toggled(bool)), SLOT(saveConfig()));
   connect(ui->after, SIGNAL(activated(int)), SLOT(saveConfig()));
-
+  connect(ui->shutterSelection, SIGNAL(currentIndexChanged(int)), SLOT(saveConfig()));
   connect(ui->commandBefore, SIGNAL(textChanged(QString)), SLOT(onChangedBefore()));
   connect(ui->browseBefore, SIGNAL(clicked()), SLOT(onBrowseBefore()));
   connect(ui->execBefore, SIGNAL(clicked()), SLOT(onExecBefore()));
@@ -221,10 +221,12 @@ MRTwindow::MRTwindow(QWidget *parent) :
   connect(ui->browseAfter, SIGNAL(clicked()), SLOT(onBrowseAfter()));
   connect(ui->execAfter, SIGNAL(clicked()), SLOT(onExecAfter()));
 
+
   ui->progressBar->setHidden(true);
 
   onChangedBefore();
   onChangedAfter();
+  onShutterChange();
 
   //shut->component()->setRepeats(1);
 
@@ -455,6 +457,7 @@ void MRTwindow::saveConfig() {
   localSettings.setValue("afterScan", ui->after->currentText());
   localSettings.setValue("beforeExec", ui->commandBefore->text());
   localSettings.setValue("afterExec", ui->commandAfter->text());
+  localSettings.setValue("shutter", ui->shutterSelection->currentText());
 
 }
 
@@ -535,6 +538,14 @@ void MRTwindow::loadConfig() {
     ui->commandBefore->setText(localSettings.value("beforeExec").toString());
   if ( localSettings.contains("afterExec") )
     ui->commandAfter->setText(localSettings.value("afterExec").toString());
+
+  if ( localSettings.contains("shutter") ) {
+    const int index = ui->shutterSelection->findText
+        ( localSettings.value("shutter").toString() );
+    if (  index >= 0 )
+      ui->shutterSelection->setCurrentIndex(index);
+  }
+
 
 }
 
